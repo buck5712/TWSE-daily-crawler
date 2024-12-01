@@ -183,7 +183,9 @@ if today not in break_day:
                         img_count = len(os.listdir(label_folder))
                         img_path = os.path.join(label_folder, f'{img_count}.png')
                         cv2.imwrite(img_path, img)
+                    
 
+                    time.sleep(uniform(3.0, 5.0))
                     browser.quit()
                     i += 1
                     break
