@@ -1,6 +1,7 @@
 import os
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from datetime import datetime, timedelta
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,8 +13,12 @@ import pandas as pd
 import requests
 import io
 
-# 2024修飾日期
-break_day = ['20240101', '20240206', '20240207', '20240208', '20240209', '20240210', '20240211', '20240212', '20240213', '20240214', '20240228', '20240404', '20240405', '20240501', '20240610', '20240917', '20241010']
+# # 2024修飾日期
+# break_day = ['20240101', '20240206', '20240207', '20240208', '20240209', '20240210', '20240211', '20240212', '20240213', '20240214', '20240228', '20240404', '20240405', '20240501', '20240610', '20240917', '20241010']
+
+# 2025休市日期
+break_day = ['20250101', '20250123', '20250124', '20250127', '20250128', '20250129', '20250130', '20250131', '20250228', '20250403', '20250404', '20250501', '20250530', '20250531', '20251006', '20251010']
+
 
 def mse(imgA, imgB):
     err = np.sum((imgA.astype("float") - imgB.astype("float")) ** 2)
@@ -65,32 +70,20 @@ def get_captcha(captcha_path):
         ans += str(predicted_char)
     return ans, character_images
 
-def get_date():
-    # Get today's date
-    today = date.today()
-    # Last date
-    if today.weekday() == 0:
-        last_day = today - timedelta(days=3)
-    else:
-        last_day = today - timedelta(days=1)
-    return str(today).replace('-', ''), str(last_day).replace('-', '')
+def get_previous_trading_day(today_str):
+    today_date = datetime.strptime(today_str, '%Y%m%d')
+    previous_day = today_date - timedelta(days=1)
+    if today_date.weekday() == 0:
+        previous_day = today_date - timedelta(days=3)
+    while previous_day.strftime('%Y%m%d') in break_day or previous_day.weekday() in [5, 6]:
+        previous_day -= timedelta(days=1)
+    return previous_day.strftime('%Y%m%d')
 
-today, last_day = get_date()
+# 獲取今天日期
+today = datetime.today().strftime('%Y%m%d')
+last_day = get_previous_trading_day(today)
 
 if today not in break_day:
-    if last_day in break_day:
-        today_temp = date.today()
-        if today == '20240215':
-            last_day = '20240205'
-        elif today == '204240406':
-            last_day = '20240403'
-        elif today_temp.weekday() == 1:  # 今天星期二，昨天星期一沒開市，所以last day是上周五
-            last_day_temp = today_temp - timedelta(days=4)
-            last_day = str(last_day_temp).replace('-', '')
-        else:  # 昨天沒開市、也不是星期一，所以last day是兩天前
-            last_day_temp = today_temp - timedelta(days=2)
-            last_day = str(last_day_temp).replace('-', '')
-
     try:
         # 將json改為csv
         yesterday_url = f'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date={last_day}&type=ALLBUT0999&_=1649743235999'
